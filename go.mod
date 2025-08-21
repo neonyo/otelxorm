@@ -1,4 +1,4 @@
-module github.com/jenbonzhang/otelxorm
+module github.com/neonyo/otelxorm
 
 go 1.18
 
