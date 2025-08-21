@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"xorm.io/xorm/contexts"
 )
 
 // Option specifies instrumentation configuration options.
@@ -26,6 +27,8 @@ type config struct {
 	tracerProvider trace.TracerProvider
 	tracer         trace.Tracer
 	attrs          []attribute.KeyValue
+	beforeHook     func(c *contexts.ContextHook)
+	afterHook      func(c *contexts.ContextHook)
 	formatSQL      func(sql string, args []interface{}) string
 }
 
@@ -59,6 +62,18 @@ func WithFormatSQL(formatSQL func(sql string, args []interface{}) string) Option
 
 func WithFormatSQLReplace() Option {
 	return WithFormatSQL(formatSQLReplace)
+}
+
+func WithBeforeHookHook(fn func(c *contexts.ContextHook)) Option {
+	return optionFunc(func(c *config) {
+		c.beforeHook = fn
+	})
+}
+
+func WithAfterHook(fn func(c *contexts.ContextHook)) Option {
+	return optionFunc(func(c *config) {
+		c.afterHook = fn
+	})
 }
 
 func defaultFormatSQL(sql string, args []interface{}) string {

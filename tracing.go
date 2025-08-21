@@ -63,6 +63,9 @@ func (h *OpenTelemetryHook) BeforeProcess(c *contexts.ContextHook) (context.Cont
 		spanName,
 		trace.WithSpanKind(trace.SpanKindClient),
 	)
+	if h.config.beforeHook != nil {
+		h.config.beforeHook(c)
+	}
 	return ctx, nil
 }
 
@@ -80,5 +83,8 @@ func (h *OpenTelemetryHook) AfterProcess(c *contexts.ContextHook) error {
 		span.SetStatus(codes.Error, c.Err.Error())
 	}
 	span.SetAttributes(attrs...)
+	if h.config.afterHook != nil {
+		h.config.afterHook(c)
+	}
 	return nil
 }
