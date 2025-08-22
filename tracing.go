@@ -60,14 +60,14 @@ func (h *OpenTelemetryHook) BeforeProcess(c *contexts.ContextHook) (context.Cont
 		spanName = h.config.dbName
 	}
 	if ctx, ok := c.Ctx.Value("spanCtx").(context.Context); ok {
-		h.config.tracer.Start(ctx,
+		newCtx, _ := h.config.tracer.Start(ctx,
 			spanName,
 			trace.WithSpanKind(trace.SpanKindClient),
 		)
 		if h.config.beforeHook != nil {
 			h.config.beforeHook(c)
 		}
-		return context.WithValue(context.Background(), "span", ctx), nil
+		return context.WithValue(context.Background(), "span", newCtx), nil
 	}
 	return c.Ctx, nil
 }
