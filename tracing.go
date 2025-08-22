@@ -66,25 +66,27 @@ func (h *OpenTelemetryHook) BeforeProcess(c *contexts.ContextHook) (context.Cont
 	if h.config.beforeHook != nil {
 		h.config.beforeHook(c)
 	}
-	return ctx, nil
+	return context.WithValue(context.Background(), "trace", ctx), nil
 }
 
 func (h *OpenTelemetryHook) AfterProcess(c *contexts.ContextHook) error {
-	span := trace.SpanFromContext(c.Ctx)
-	attrs := make([]attribute.KeyValue, 0)
-	defer span.End()
+	if ctx, ok := c.Ctx.Value("trace").(context.Context); ok {
+		span := trace.SpanFromContext(ctx)
+		attrs := make([]attribute.KeyValue, 0)
+		defer span.End()
 
-	attrs = append(attrs, h.config.attrs...)
-	attrs = append(attrs, attribute.Key("go.orm").String("xorm"))
-	attrs = append(attrs, semconv.DBStatement(h.config.formatSQL(c.SQL, c.Args)))
+		attrs = append(attrs, h.config.attrs...)
+		attrs = append(attrs, attribute.Key("go.orm").String("xorm"))
+		attrs = append(attrs, semconv.DBStatement(h.config.formatSQL(c.SQL, c.Args)))
 
-	if c.Err != nil {
-		span.RecordError(c.Err)
-		span.SetStatus(codes.Error, c.Err.Error())
-	}
-	span.SetAttributes(attrs...)
-	if h.config.afterHook != nil {
-		h.config.afterHook(c)
+		if c.Err != nil {
+			span.RecordError(c.Err)
+			span.SetStatus(codes.Error, c.Err.Error())
+		}
+		span.SetAttributes(attrs...)
+		if h.config.afterHook != nil {
+			h.config.afterHook(c)
+		}
 	}
 	return nil
 }
