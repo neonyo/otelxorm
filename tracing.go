@@ -67,13 +67,13 @@ func (h *OpenTelemetryHook) BeforeProcess(c *contexts.ContextHook) (context.Cont
 		if h.config.beforeHook != nil {
 			h.config.beforeHook(c)
 		}
-		return context.WithValue(context.Background(), "spanCtx", ctx), nil
+		return context.WithValue(context.Background(), "span", ctx), nil
 	}
 	return c.Ctx, nil
 }
 
 func (h *OpenTelemetryHook) AfterProcess(c *contexts.ContextHook) error {
-	if ctx, ok := c.Ctx.Value("spanCtx").(context.Context); ok {
+	if ctx, ok := c.Ctx.Value("span").(context.Context); ok {
 		span := trace.SpanFromContext(ctx)
 		attrs := make([]attribute.KeyValue, 0)
 		defer span.End()
