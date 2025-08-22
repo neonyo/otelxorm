@@ -59,18 +59,21 @@ func (h *OpenTelemetryHook) BeforeProcess(c *contexts.ContextHook) (context.Cont
 	if len(h.config.dbName) != 0 {
 		spanName = h.config.dbName
 	}
-	ctx, _ := h.config.tracer.Start(c.Ctx,
-		spanName,
-		trace.WithSpanKind(trace.SpanKindClient),
-	)
-	if h.config.beforeHook != nil {
-		h.config.beforeHook(c)
+	if ctx, ok := c.Ctx.Value("spanCtx").(context.Context); ok {
+		h.config.tracer.Start(ctx,
+			spanName,
+			trace.WithSpanKind(trace.SpanKindClient),
+		)
+		if h.config.beforeHook != nil {
+			h.config.beforeHook(c)
+		}
+		return context.WithValue(context.Background(), "spanCtx", ctx), nil
 	}
-	return context.WithValue(context.Background(), "trace", ctx), nil
+	return c.Ctx, nil
 }
 
 func (h *OpenTelemetryHook) AfterProcess(c *contexts.ContextHook) error {
-	if ctx, ok := c.Ctx.Value("trace").(context.Context); ok {
+	if ctx, ok := c.Ctx.Value("spanCtx").(context.Context); ok {
 		span := trace.SpanFromContext(ctx)
 		attrs := make([]attribute.KeyValue, 0)
 		defer span.End()
