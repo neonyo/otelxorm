@@ -82,6 +82,11 @@ func (h *OpenTelemetryHook) AfterProcess(c *contexts.ContextHook) error {
 		attrs = append(attrs, attribute.Key("go.orm").String("xorm"))
 		attrs = append(attrs, semconv.DBStatement(h.config.formatSQL(c.SQL, c.Args)))
 
+		if c.Result != nil {
+			rows, _ := c.Result.RowsAffected()
+			attrs = append(attrs, attribute.Int64("db.rows.affected", rows))
+		}
+
 		if c.Err != nil {
 			span.RecordError(c.Err)
 			span.SetStatus(codes.Error, c.Err.Error())
