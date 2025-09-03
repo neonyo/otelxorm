@@ -23,6 +23,7 @@ func (o optionFunc) apply(c *config) {
 }
 
 type config struct {
+	spanName       string
 	dbName         string
 	tracerProvider trace.TracerProvider
 	tracer         trace.Tracer
@@ -30,6 +31,12 @@ type config struct {
 	beforeHook     func(c *contexts.ContextHook)
 	afterHook      func(c *contexts.ContextHook)
 	formatSQL      func(sql string, args []interface{}) string
+}
+
+func WithSpanName(name string) Option {
+	return optionFunc(func(cfg *config) {
+		cfg.spanName = name
+	})
 }
 
 // WithTracerProvider with tracer provider.
