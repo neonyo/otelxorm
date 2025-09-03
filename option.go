@@ -84,6 +84,9 @@ func WithAfterHook(fn func(c *contexts.ContextHook)) Option {
 }
 
 func defaultFormatSQL(sql string, args []interface{}) string {
+	if len(args) == 0 {
+		return sql
+	}
 	argsStr := fmt.Sprintf("%v", args)
 	m, err := json.Marshal(args)
 	if err == nil {
@@ -97,7 +100,7 @@ func formatSQLReplace(sql string, args []interface{}) string {
 		return sql
 	}
 
-	re := regexp.MustCompile(`\$\d+`)
+	re := regexp.MustCompile(`\?`)
 	matches := re.FindAllStringIndex(sql, -1)
 
 	if len(matches) == 0 {
@@ -141,15 +144,16 @@ func formatValue(v interface{}) string {
 	switch val := v.(type) {
 	case string:
 		data = val
+		data = fmt.Sprintf("'%v'", val)
 	case time.Time:
 		data = fmt.Sprintf("'%s'", val.Format("2006-01-02 15:04:05"))
 	case []byte:
-		data = string(val)
+		data = fmt.Sprintf("'%v'", string(val))
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 		data = fmt.Sprintf("%v", val)
 	default:
 		d, _ := json.Marshal(val)
 		data = string(d)
 	}
-	return fmt.Sprintf("'%v'", data)
+	return fmt.Sprintf("%v", data)
 }
