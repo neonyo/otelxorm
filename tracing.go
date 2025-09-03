@@ -55,9 +55,9 @@ func WrapEngineGroup(eg *xorm.EngineGroup, opts ...Option) {
 }
 
 func (h *OpenTelemetryHook) BeforeProcess(c *contexts.ContextHook) (context.Context, error) {
-	spanName := "xorm-db"
-	if len(h.config.dbName) != 0 {
-		spanName = h.config.dbName
+	spanName := "sql"
+	if h.config.spanName != "" {
+		spanName = h.config.spanName
 	}
 	if ctx, ok := c.Ctx.Value("spanCtx").(context.Context); ok {
 		newCtx, _ := h.config.tracer.Start(ctx,
