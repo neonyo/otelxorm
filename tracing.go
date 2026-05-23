@@ -2,6 +2,7 @@ package otelxorm
 
 import (
 	"context"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -59,6 +60,9 @@ func (h *OpenTelemetryHook) BeforeProcess(c *contexts.ContextHook) (context.Cont
 	if len(h.config.dbName) != 0 {
 		spanName = h.config.dbName
 	}
+	if c.Ctx == nil {
+		return c.Ctx, nil
+	}
 	if ctx, ok := c.Ctx.Value("spanCtx").(context.Context); ok {
 		newCtx, _ := h.config.tracer.Start(ctx,
 			spanName,
@@ -73,6 +77,9 @@ func (h *OpenTelemetryHook) BeforeProcess(c *contexts.ContextHook) (context.Cont
 }
 
 func (h *OpenTelemetryHook) AfterProcess(c *contexts.ContextHook) error {
+	if c.Ctx == nil {
+		return nil
+	}
 	if ctx, ok := c.Ctx.Value("span").(context.Context); ok {
 		span := trace.SpanFromContext(ctx)
 		attrs := make([]attribute.KeyValue, 0)
