@@ -6,14 +6,14 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.opentelemetry.io/otel/trace"
 	"xorm.io/xorm"
 	"xorm.io/xorm/contexts"
 )
 
 const (
-	tracerName = "github.com/jenbonzhang/otelxorm"
+	tracerName = "otelxorm"
 )
 
 type OpenTelemetryHook struct {
@@ -38,7 +38,7 @@ func Hook(opts ...Option) contexts.Hook {
 		cfg.formatSQL = defaultFormatSQL
 	}
 	for _, attr := range cfg.attrs {
-		if attr.Key == semconv.DBNameKey {
+		if attr.Key == semconv.DBNamespaceKey {
 			cfg.dbName = attr.Value.AsString()
 		}
 	}
@@ -56,13 +56,14 @@ func WrapEngineGroup(eg *xorm.EngineGroup, opts ...Option) {
 }
 
 func (h *OpenTelemetryHook) BeforeProcess(c *contexts.ContextHook) (context.Context, error) {
+	if c.Ctx == nil {
+		return context.Background(), nil
+	}
 	spanName := "sql"
 	if h.config.spanName != "" {
 		spanName = h.config.spanName
 	}
-	if c.Ctx == nil {
-		return context.Background(), nil
-	}
+
 	if ctx, ok := c.Ctx.Value("spanCtx").(context.Context); ok {
 		newCtx, _ := h.config.tracer.Start(ctx,
 			spanName,
@@ -87,7 +88,7 @@ func (h *OpenTelemetryHook) AfterProcess(c *contexts.ContextHook) error {
 
 		attrs = append(attrs, h.config.attrs...)
 		attrs = append(attrs, attribute.Key("go.orm").String("xorm"))
-		attrs = append(attrs, semconv.DBStatement(h.config.formatSQL(c.SQL, c.Args)))
+		attrs = append(attrs, semconv.DBQueryTextKey.String(h.config.formatSQL(c.SQL, c.Args)))
 
 		if c.Result != nil {
 			rows, _ := c.Result.RowsAffected()
